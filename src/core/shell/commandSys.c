@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "configuration/configuration.h"
 #include "isolation/isolate.h"
 
@@ -18,12 +19,12 @@ enum Cmd {
 struct CmdMap { const char *name; enum Cmd cmd; };
 
 static const struct CmdMap cmd_table[] = {
-    {startConnection,  CMD_START_CONNECTION},
-    {stopConnection,   CMD_STOP_CONNECTION},
-    {startCommand,     CMD_START_COMMAND},
-    {stopCommand,      CMD_STOP_COMMAND},
-    {startLimitation,  CMD_START_LIMITATION},
-    {stopCommand,   CMD_STOP_LIMITATION},
+    {START_CONNECTION_COMMAND, CMD_START_CONNECTION},
+    {STOP_CONNECTION_COMMAND, CMD_STOP_CONNECTION},
+    {START_COMMAND_COMMAND, CMD_START_COMMAND},
+    {STOP_COMMAND_COMMAND, CMD_STOP_COMMAND},
+    {START_LIMITATION_COMMAND, CMD_START_LIMITATION},
+    {STOP_LIMITATION_COMMAND, CMD_STOP_LIMITATION},
 };
 
 enum Cmd lookup_cmd(const char *s) {
@@ -34,40 +35,52 @@ enum Cmd lookup_cmd(const char *s) {
 }
 
 void execute_command(char **args){
-
-    pid_t pid = fork();
-
-    if (pid == 0){
-        printf("works fine\n"); 
-    } else{
-        exit(1);
+    if (args == NULL || args[0] == NULL) {
+        fprintf(stderr, "Provide a proper command\n");
+        return;
     }
 
-    while (args)
-    {
-        /* code */
+    fflush(stdout);
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        return;
+    }
+
+    if (pid == 0){
         if (strcmp(args[0], "guard") != 0){
             printf("command not found, did you mean guard?\n");
-        } else{
-            
+            _exit(EXIT_FAILURE);
+        }
+
+        if (args[1] == NULL || args[2] != NULL) {
+            fprintf(stderr, "Provide a proper command\n");
+            _exit(EXIT_FAILURE);
+        }
+
+        {
             enum Cmd c = lookup_cmd(args[1]);
             switch (c)
             {
-            case CMD_START_CONNECTION: startConnection();
-            case CMD_STOP_CONNECTION: stopConnection();
-            case CMD_START_COMMAND: startCommand();
-            case CMD_STOP_COMMAND: stopedCommand();
-            case CMD_START_LIMITATION: startLimitation();
-            case CMD_STOP_LIMITATION: stopLimitation();
-            
+            case CMD_START_CONNECTION: startConnection(); break;
+            case CMD_STOP_CONNECTION: stopConnection(); break;
+            case CMD_START_COMMAND: startCommand(); break;
+            case CMD_STOP_COMMAND: stopCommand(); break;
+            case CMD_START_LIMITATION: startLimitation(); break;
+            case CMD_STOP_LIMITATION: stopLimitation(); break;
+
             default:
-                "Provide a proper command\n";
+                fprintf(stderr, "Provide a proper command\n");
+                _exit(EXIT_FAILURE);
             }
         }
 
+        fflush(stdout);
+        _exit(EXIT_SUCCESS);
     }
-    
 
-
-
+    if (waitpid(pid, NULL, 0) < 0) {
+        perror("waitpid");
+    }
 }

@@ -27,7 +27,7 @@ void startCommand(){
     printf("command started");
 }
 
-void stopedCommand(){
+void stopCommand(){
     printf("command stopped");
 }
 
