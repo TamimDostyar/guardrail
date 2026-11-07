@@ -1,8 +1,7 @@
 #include <stdio.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <limits.h>
+#include <sys/stat.h> // for mkdir
+#include <stdlib.h> // for realpath function
+#include <dirent.h> // for DIR
 
 #include "configuration/configuration.h"
 #include "files/files.h"
@@ -28,7 +27,6 @@ char *getInDirectory(void){
         perror("realpath");
         return NULL;
     } else{
-        // printf("Guardrails path: %s\n", guardrails_path);
         return guardrails_path;
     }
 }
